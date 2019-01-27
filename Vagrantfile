@@ -78,7 +78,7 @@ Vagrant.configure("2") do |config|
 
     # RTOS
     cd ~/esp-rt
-    git clone https://github.com/espressif/ESP8266_RTOS_SDK.git
+    git clone https://github.com/labasse/ESP8266_RTOS_SDK.git
 
     echo 'export SDK_PATH=~/esp-rt/ESP8266_RTOS_SDK' >> ~/.profile
     echo 'export BIN_PATH=~/esp-rt/ESP8266_RTOS_SDK/bin' >> ~/.profile
