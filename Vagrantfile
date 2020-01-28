@@ -12,7 +12,7 @@ Vagrant.configure("2") do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
-  config.vm.box = "ubuntu/trusty32"
+  config.vm.box = "ubuntu/xenial32"
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -49,13 +49,15 @@ Vagrant.configure("2") do |config|
   # backing providers for Vagrant. These expose provider-specific options.
   # Example for VirtualBox:
   #
-  # config.vm.provider "virtualbox" do |vb|
+  config.vm.provider "virtualbox" do |vb|
   #   # Display the VirtualBox GUI when booting the machine
   #   vb.gui = true
   #
   #   # Customize the amount of memory on the VM:
   #   vb.memory = "1024"
-  # end
+    vb.customize ["modifyvm", :id, "--usb", "on"]
+    vb.customize ['usbfilter', 'add', '0', '--target', :id, '--name', 'ESP', '--vendorid', '0x1a86', '--productid', '0x7523']
+  end
   #
   # View the documentation for the provider you are using for more
   # information on available options.
@@ -65,30 +67,48 @@ Vagrant.configure("2") do |config|
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", privileged:false, inline: <<-SHELL
     sudo apt-get update
-    sudo apt-get install -y make autoconf automake libtool gcc g++ gperf flex bison texinfo gawk ncurses-dev libexpat-dev python-dev python python-serial git unzip help2man wget bzip2 python3-pip linux-image-extra-virtual
-    mkdir ~/esp-rt && cd ~/esp-rt
+
+  ## System setup
+  # Step 1. https://docs.espressif.com/projects/esp-idf/en/latest/get-started/linux-setup.html
+  sudo apt-get install -y git wget flex bison gperf python python-pip python-setuptools python-serial python-click python-cryptography python-future python-pyparsing python-pyelftools cmake ninja-build ccache libffi-dev libssl-dev libncurses-dev linux-image-extra-virtual
+
+  # Step 2. https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html#get-started-get-esp-idf
+  mkdir ~/esp && cd ~/esp
+  
+  ## ESP8266
+  # Toolchain setup : https://docs.espressif.com/projects/esp8266-rtos-sdk/en/latest/get-started/linux-setup.html
     
-    # SDK
-    git clone --recursive https://github.com/piersfinlayson/esp-open-sdk
+  cd ~/esp
+  wget https://dl.espressif.com/dl/xtensa-lx106-elf-linux32-1.22.0-100-ge567ec7-5.2.0.tar.gz
+  tar -xzf xtensa-lx106-elf-linux32-1.22.0-100-ge567ec7-5.2.0.tar.gz
 
-    cd esp-open-sdk
-    make
+  echo 'export PATH="$PATH:$HOME/esp/xtensa-lx106-elf/bin"' >> ~/.profile
+  echo 'export IDF_PATH=~/esp/ESP8266_RTOS_SDK' >> ~/.profile
 
-    echo 'export PATH=~/esp-rt/esp-open-sdk/xtensa-lx106-elf/bin:$PATH' >> ~/.profile
+  export PATH="$PATH:$HOME/esp/xtensa-lx106-elf/bin"
+  export IDF_PATH=~/esp/ESP8266_RTOS_SDK
 
-    # RTOS
-    cd ~/esp-rt
-    git clone https://github.com/labasse/ESP8266_RTOS_SDK.git
+  # SDK : https://docs.espressif.com/projects/esp8266-rtos-sdk/en/latest/get-started/index.html#get-started-get-esp-idf
+  cd ~/esp
+  git clone --recursive https://github.com/espressif/ESP8266_RTOS_SDK.git
 
-    echo 'export SDK_PATH=~/esp-rt/ESP8266_RTOS_SDK' >> ~/.profile
-    echo 'export BIN_PATH=~/esp-rt/ESP8266_RTOS_SDK/bin' >> ~/.profile
-    echo 'export IDF_PATH=~/esp-rt/ESP8266_RTOS_SDK' >> ~/.profile
+  # USB
+  sudo usermod -a -G dialout $USER
 
-    # esptool
-    sudo pip3 install esptool
+  # Python requirements
+  pip install --upgrade pip
 
-    # USB port rights
-    sudo usermod -a -G dialout $USER
+  pip install --user -r $IDF_PATH/requirements.txt
+
+  cp -r $IDF_PATH/examples/get-started/hello_world ~/esp
 
   SHELL
+
+  #config.vm.provision :reload
+
+  config.vm.provision "shell", privileged:false, inline: <<-SHELL
+    pip install --user -r $IDF_PATH/requirements.txt
+  SHELL
+
+
 end
