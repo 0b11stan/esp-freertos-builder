@@ -16,7 +16,7 @@ docker run --device=/dev/ttyUSB0:/dev/ttyUSB0:rwm -it esptoolchain /bin/bash
 
 Then, connect the ESP8266 kit and run :
 ```
-cd esp\hello_world
+cd /root/esp/hello_world
 make flash monitor
 ```
 
